@@ -189,3 +189,37 @@ WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='lab@hospital.local');
 INSERT INTO users (name,email,password,role)
 SELECT 'Recep. Diana','reception@hospital.local',@HASH,'receptionist'
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='reception@hospital.local');
+
+
+
+
+
+USE hms;
+
+-- 0.1 LAB ORDERS (doctor schedules; labtech sees and completes)
+CREATE TABLE IF NOT EXISTS lab_orders (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  patient_id BIGINT UNSIGNED NOT NULL,
+  test_id BIGINT UNSIGNED NOT NULL,
+  ordered_by BIGINT UNSIGNED NOT NULL,
+  status ENUM('ordered','reported') NOT NULL DEFAULT 'ordered',
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (patient_id) REFERENCES patients(id),
+  FOREIGN KEY (test_id) REFERENCES lab_tests(id),
+  FOREIGN KEY (ordered_by) REFERENCES users(id)
+) ENGINE=InnoDB;
+
+-- 0.2 PHARMACY DISPENSE LOG (history of dispensed drugs)
+CREATE TABLE IF NOT EXISTS pharmacy_dispenses (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  prescription_item_id BIGINT UNSIGNED NOT NULL,
+  qty INT NOT NULL DEFAULT 1,
+  dispensed_by BIGINT UNSIGNED NOT NULL,
+  dispensed_at DATETIME NOT NULL,
+  FOREIGN KEY (prescription_item_id) REFERENCES prescription_items(id),
+  FOREIGN KEY (dispensed_by) REFERENCES users(id)
+) ENGINE=InnoDB;
+
+-- helpful index for patient search
+CREATE INDEX idx_patients_name ON patients(last_name, first_name);
+CREATE INDEX idx_patients_no ON patients(patient_no);

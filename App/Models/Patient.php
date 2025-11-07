@@ -30,6 +30,19 @@ final class Patient {
       $d['contact']??null,$d['address']??null,$d['emergency_contact']??null,$id
     ]);
   }
+
+
+  public static function search(string $q, int $limit=50): array {
+  $q = '%'.$q.'%';
+  $sql="SELECT id, patient_no, first_name, last_name, contact FROM patients
+        WHERE patient_no LIKE ? OR first_name LIKE ? OR last_name LIKE ?
+        ORDER BY last_name, first_name LIMIT ?";
+  $st=\App\Core\DB::pdo()->prepare($sql);
+  $st->bindValue(1,$q); $st->bindValue(2,$q); $st->bindValue(3,$q);
+  $st->bindValue(4,$limit,\PDO::PARAM_INT);
+  $st->execute(); return $st->fetchAll();
+}
+
   public static function delete(int $id): void {
     DB::pdo()->prepare("DELETE FROM patients WHERE id=?")->execute([$id]);
   }

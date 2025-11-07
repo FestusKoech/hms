@@ -10,6 +10,16 @@ final class LabController extends Controller {
     $this->view('lab/index',['items'=>LabReport::latest(50)]);
   }
 
+  public function reportShow(): void {
+  if(!\App\Core\Auth::check()) $this->redirect('/');
+  if(!in_array(\App\Core\Auth::user()['role'], ['labtech','admin'])) exit('Forbidden');
+  $id=(int)($_GET['id'] ?? 0);
+  $r=\App\Models\LabReport::find($id);
+  if(!$r){ header('HTTP/1.0 404 Not Found'); exit('Report not found'); }
+  $this->view('lab/report_show', ['r'=>$r]);
+}
+
+
   public function create(): void {
     if(!Auth::check()) $this->redirect('/');
     if(!in_array(Auth::user()['role'], ['labtech','admin'])) exit('Forbidden');

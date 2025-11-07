@@ -31,7 +31,7 @@ final class App {
     $r->post('/appointments/delete', [AppointmentsController::class,'delete']);
 
     // DOCTOR
-$r->get('/doctor', [\App\Controllers\DoctorController::class,'dashboard']);
+$r->get('/dashboard', [\App\Controllers\DashboardController::class, 'index']);
 $r->get('/doctor/prescribe', [\App\Controllers\DoctorController::class,'prescribeForm']);         // ?patient_id=
 $r->post('/doctor/prescribe', [\App\Controllers\DoctorController::class,'prescribeStore']);
 $r->get('/doctor/patient-report', [\App\Controllers\DoctorController::class,'addPatientReportForm']); // ?patient_id=
@@ -63,6 +63,57 @@ $r->post('/admin/users/store', [\App\Controllers\AdminUsersController::class,'st
 $r->get('/admin/users/edit', [\App\Controllers\AdminUsersController::class,'edit']); // ?id=
 $r->post('/admin/users/update', [\App\Controllers\AdminUsersController::class,'update']);
 $r->post('/admin/users/delete', [\App\Controllers\AdminUsersController::class,'delete']);
+
+
+// Doctor tools
+$r->get('/doctor/search', [\App\Controllers\DoctorController::class,'searchForm']);
+$r->post('/doctor/search', [\App\Controllers\DoctorController::class,'searchRun']);
+$r->get('/doctor/patient', [\App\Controllers\DoctorController::class,'patientView']); // ?id=
+$r->get('/doctor/lab-order', [\App\Controllers\DoctorController::class,'labOrderForm']); // ?patient_id=
+$r->post('/doctor/lab-order', [\App\Controllers\DoctorController::class,'labOrderStore']);
+
+
+$r->get('/lab/orders', [\App\Controllers\LabController::class,'orders']);
+$r->get('/lab/report-from-order', [\App\Controllers\LabController::class,'reportFromOrderForm']); // ?order_id=
+$r->post('/lab/report-from-order', [\App\Controllers\LabController::class,'reportFromOrderStore']);
+
+$r->get('/doctor/lab-reports', [\App\Controllers\DoctorController::class,'labReports']);
+$r->get('/doctor/lab-report',  [\App\Controllers\DoctorController::class,'labReportShow']); // ?id=
+
+
+$r->get('/lab/report', [\App\Controllers\LabController::class,'reportShow']); // ?id=
+
+
+// Doctor (make sure you also have a DoctorController created with these methods)
+$r->get('/doctor/prescribe', [\App\Controllers\DoctorController::class,'prescribeForm']);      // ?patient_id=
+$r->post('/doctor/prescribe', [\App\Controllers\DoctorController::class,'prescribeStore']);
+$r->get('/doctor/lab-order', [\App\Controllers\DoctorController::class,'labOrderForm']);       // ?patient_id=
+$r->post('/doctor/lab-order', [\App\Controllers\DoctorController::class,'labOrderStore']);
+$r->get('/doctor/patient-report', [\App\Controllers\DoctorController::class,'addPatientReportForm']); // ?patient_id=
+$r->post('/doctor/patient-report', [\App\Controllers\DoctorController::class,'addPatientReportStore']);
+$r->get('/doctor/lab-reports', [\App\Controllers\DoctorController::class,'labReports']);
+$r->get('/doctor/lab-report',  [\App\Controllers\DoctorController::class,'labReportShow']);   // ?id=
+
+
+
+// Doctor
+$r->get('/doctor', [\App\Controllers\DoctorController::class,'dashboard']);
+$r->get('/doctor/search', [\App\Controllers\DoctorController::class,'searchForm']);
+$r->post('/doctor/search', [\App\Controllers\DoctorController::class,'searchRun']);
+$r->get('/doctor/patient', [\App\Controllers\DoctorController::class,'patientView']); // ?id=
+
+$r->get('/doctor/prescribe', [\App\Controllers\DoctorController::class,'prescribeForm']);      // ?patient_id=
+$r->post('/doctor/prescribe', [\App\Controllers\DoctorController::class,'prescribeStore']);
+
+$r->get('/doctor/patient-report', [\App\Controllers\DoctorController::class,'addPatientReportForm']); // ?patient_id=
+$r->post('/doctor/patient-report', [\App\Controllers\DoctorController::class,'addPatientReportStore']);
+
+$r->get('/doctor/lab-order', [\App\Controllers\DoctorController::class,'labOrderForm']);      // ?patient_id=
+$r->post('/doctor/lab-order', [\App\Controllers\DoctorController::class,'labOrderStore']);
+
+$r->get('/doctor/lab-reports', [\App\Controllers\DoctorController::class,'labReports']);
+$r->get('/doctor/lab-report',  [\App\Controllers\DoctorController::class,'labReportShow']);  // ?id=
+
 
 
     $r->dispatch();
