@@ -223,3 +223,76 @@ CREATE TABLE IF NOT EXISTS pharmacy_dispenses (
 -- helpful index for patient search
 CREATE INDEX idx_patients_name ON patients(last_name, first_name);
 CREATE INDEX idx_patients_no ON patients(patient_no);
+
+
+
+-- 1) Add a stock column (safe if it doesn't exist yet)
+ALTER TABLE drugs
+  ADD COLUMN stock INT NOT NULL DEFAULT 0 AFTER strength;
+
+-- 2) If you previously stored quantity in another column, copy it over (optional)
+-- (Uncomment the one that matches your schema)
+-- UPDATE drugs SET stock = quantity       WHERE stock = 0 AND quantity       IS NOT NULL;
+-- UPDATE drugs SET stock = qty_in_stock   WHERE stock = 0 AND qty_in_stock   IS NOT NULL;
+-- UPDATE drugs SET stock = available_qty  WHERE stock = 0 AND available_qty  IS NOT NULL;
+
+-- 3) Give everything a sane default so the dashboard & pharmacy work right away
+UPDATE drugs SET stock = 50 WHERE stock = 0;
+
+
+
+INSERT INTO drugs (name, strength, stock) VALUES
+('Paracetamol', '500mg tablet', 120),
+('Amoxicillin', '500mg capsule', 60),
+('Ibuprofen', '200mg tablet', 200),
+('Metformin', '500mg tablet', 80),
+('Azithromycin', '250mg tablet', 50),
+('Ciprofloxacin', '500mg tablet', 40),
+('Cetirizine', '10mg tablet', 300),
+('Lisinopril', '10mg tablet', 75),
+('Atorvastatin', '20mg tablet', 110),
+('Omeprazole', '20mg capsule', 150),
+('Amlodipine', '5mg tablet', 100),
+('Losartan', '50mg tablet', 95),
+('Hydrochlorothiazide', '25mg tablet', 85),
+('Simvastatin', '20mg tablet', 60),
+('Prednisone', '10mg tablet', 45),
+('Furosemide', '40mg tablet', 120),
+('Insulin Glargine', '100IU/ml injection', 30),
+('Salbutamol', '100mcg inhaler', 40),
+('Doxycycline', '100mg capsule', 65),
+('Clindamycin', '300mg capsule', 70),
+('Ceftriaxone', '1g injection', 25),
+('Ketoconazole', '200mg tablet', 55),
+('Gentamicin', '80mg injection', 35),
+('Vitamin C', '500mg tablet', 200),
+('Zinc Sulphate', '20mg tablet', 180),
+('Ferrous Sulphate', '325mg tablet', 140),
+('Ranitidine', '150mg tablet', 95),
+('Diazepam', '5mg tablet', 70),
+('Lorazepam', '2mg tablet', 60),
+('Tramadol', '50mg capsule', 85),
+('Codeine', '30mg tablet', 25),
+('Morphine', '10mg injection', 20),
+('Aspirin', '75mg tablet', 300),
+('Hydrocortisone', '100mg injection', 40),
+('Cefuroxime', '500mg tablet', 90),
+('Erythromycin', '250mg tablet', 50),
+('Dexamethasone', '4mg injection', 25),
+('Cough Syrup', '100ml bottle', 70),
+('ORS', 'Sachet', 200),
+('Antacid', '500mg tablet', 160),
+('Chloroquine', '250mg tablet', 35),
+('Artemether/Lumefantrine', '20/120mg tablet', 90),
+('Insulin Regular', '100IU/ml injection', 25),
+('Metronidazole', '400mg tablet', 100),
+('Benzyl Penicillin', '1MU injection', 30),
+('Diclofenac', '50mg tablet', 120),
+('Amoxiclav', '625mg tablet', 70),
+('Sodium Chloride', '500ml infusion', 40),
+('Ringer’s Lactate', '500ml infusion', 45),
+('Glucose 5%', '500ml infusion', 55);
+
+
+
+

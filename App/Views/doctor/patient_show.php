@@ -1,3 +1,17 @@
+<?php if(!empty($_SESSION['flash'])): ?>
+  <div class="alert alert-success"><?= htmlspecialchars($_SESSION['flash']) ?></div>
+  <?php unset($_SESSION['flash']); ?>
+<?php endif; ?>
+
+<?php if(!empty($_SESSION['flash'])): ?>
+  <div class="alert alert-success d-flex align-items-center" role="alert">
+    <i class="bi bi-check-circle me-2"></i>
+    <div><?= htmlspecialchars($_SESSION['flash']) ?></div>
+  </div>
+  <?php unset($_SESSION['flash']); ?>
+<?php endif; ?>
+
+
 <h1 class="h4 mb-3">Patient · <?= htmlspecialchars($p['first_name'].' '.$p['last_name']) ?> (<?= htmlspecialchars($p['patient_no']) ?>)</h1>
 
 <div class="row g-3 mb-3">

@@ -1,0 +1,72 @@
+.hero {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #000;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 28px rgba(16, 24, 40, 0.1), 0 2px 8px rgba(16, 24, 40, 0.06);
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../afia-hero.jpg") center/cover no-repeat;
+  opacity: 0.4;
+  filter: saturate(110%) contrast(105%);
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,.15), rgba(0,0,0,.45));
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  color: #fff;
+}
+
+.hero h1 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.subtitle {
+  opacity: 0.95;
+  font-weight: 500;
+}
+
+.card-kpi {
+  background: #fff;
+  border: 1px solid #e6e6ea;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06),
+              0 1px 3px rgba(16, 24, 40, 0.04);
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.kpi-label {
+  color: #6b6f76;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.section-title {
+  font-weight: 700;
+}
+
+/* in public/assets/css/dashboard.css */
+.card-body canvas { max-height: 280px; }
