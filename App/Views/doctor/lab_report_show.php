@@ -1,31 +1,77 @@
-<h1 class="h4 mb-3">Lab Report #<?= (int)$r['id'] ?></h1>
+<?php
+/** Expected $r from controller:
+ *  - id, patient_id, test_id, test_name
+ *  - result_value, result_text
+ *  - ordered_by, ordered_by_name
+ *  - reported_by, reported_by_name, reported_at
+ *  - first_name, last_name (patient)
+ */
+$patientName = trim(($r['first_name'] ?? '') . ' ' . ($r['last_name'] ?? ''));
+$patientName = $patientName !== '' ? $patientName : 'Unknown patient';
+$reportedAt  = !empty($r['reported_at']) ? $r['reported_at'] : '—';
+?>
 
+<!-- Report header (patient + test) -->
+<div class="card mb-3">
+  <div class="card-body d-flex justify-content-between align-items-center">
+    <div>
+      <div class="fw-semibold"><?= htmlspecialchars($patientName) ?></div>
+      <div class="small text-muted">Test: <?= htmlspecialchars($r['test_name'] ?? '—') ?></div>
+    </div>
+    <div class="text-end">
+      <div class="small text-muted">Report ID: #<?= (int)$r['id'] ?></div>
+      <div class="small">Reported: <?= htmlspecialchars($reportedAt) ?></div>
+    </div>
+  </div>
+</div>
+
+<!-- Findings -->
 <div class="row g-3">
-  <div class="col-lg-6">
-    <div class="card">
-      <div class="card-header"><strong>Patient / Test</strong></div>
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Result (Value)</div>
       <div class="card-body">
-        <dl class="row mb-0">
-          <dt class="col-4">Patient</dt><dd class="col-8"><?= htmlspecialchars($r['first_name'].' '.$r['last_name']) ?></dd>
-          <dt class="col-4">Test</dt><dd class="col-8"><?= htmlspecialchars($r['test_name']) ?></dd>
-          <dt class="col-4">Ordered by</dt><dd class="col-8"><?= htmlspecialchars($r['ordered_by_name']) ?></dd>
-          <dt class="col-4">Reported by</dt><dd class="col-8"><?= htmlspecialchars($r['reported_by_name'] ?? '-') ?></dd>
-          <dt class="col-4">Reported at</dt><dd class="col-8"><?= htmlspecialchars($r['reported_at'] ?? '-') ?></dd>
-        </dl>
+        <div class="fs-5"><?= htmlspecialchars($r['result_value'] ?? '—') ?></div>
       </div>
     </div>
   </div>
-  <div class="col-lg-6">
-    <div class="card">
-      <div class="card-header"><strong>Result</strong></div>
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Findings (Text)</div>
       <div class="card-body">
-        <p class="mb-1"><strong>Value:</strong> <?= htmlspecialchars($r['result_value'] ?? '-') ?></p>
-        <p class="mb-0"><strong>Text:</strong><br><?= htmlspecialchars($r['result_text'] ?? '-') ?></p>
+        <div style="white-space:pre-wrap"><?= htmlspecialchars($r['result_text'] ?? '—') ?></div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="mt-3">
-  <a class="btn btn-outline-light" href="<?= APP_URL ?>/doctor/lab-reports">Back</a>
+<!-- Provenance: who ordered / who reported -->
+<div class="row g-3 mt-1">
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Ordered By</div>
+      <div class="card-body">
+        <div><?= htmlspecialchars($r['ordered_by_name'] ?? '—') ?></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Reported By</div>
+      <div class="card-body">
+        <div><?= htmlspecialchars($r['reported_by_name'] ?? '—') ?></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Actions -->
+<div class="mt-3 d-flex gap-2">
+  <a class="btn btn-primary"
+     href="<?= APP_URL ?>/doctor/patient-report/create?patient_id=<?= (int)($r['patient_id'] ?? 0) ?>
+       &title=<?= urlencode('Lab Report ('.($r['test_name'] ?? 'Test').')') ?>
+       &lab_report_id=<?= (int)$r['id'] ?>">
+    Add Patient Report
+  </a>
+  <a class="btn btn-outline-secondary" href="<?= APP_URL ?>/doctor/lab-reports">Back</a>
 </div>

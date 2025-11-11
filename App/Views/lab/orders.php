@@ -16,8 +16,11 @@
           <td><?= htmlspecialchars($o['doctor']) ?></td>
           <td class="text-muted"><?= htmlspecialchars($o['created_at']) ?></td>
           <td class="text-end">
-            <a class="btn btn-sm btn-primary" href="<?= APP_URL ?>/lab/report-from-order?order_id=<?= (int)$o['id'] ?>">Add Report</a>
-          </td>
+  <a class="btn btn-sm btn-primary"
+     href="<?= APP_URL ?>/lab/report-from-order?order_id=<?= (int)$o['id'] ?>">
+    Add Results
+  </a>
+</td>
           <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 mb-0">Pending Lab Orders</h1>
   <a class="btn btn-outline-secondary" href="<?= APP_URL ?>/doctor/lab-reports">Recent Reports</a>

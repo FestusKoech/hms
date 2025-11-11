@@ -190,32 +190,47 @@ final class DoctorController extends Controller
   }
 
   /** Create a doctor patient report (note) */
-  public function addPatientReportForm(): void {
-    if (!Auth::check()) $this->redirect('/');
-    if (!in_array(Auth::user()['role'], ['doctor','admin'])) exit('Forbidden');
+public function addPatientReportForm(): void {
+  if (!Auth::check()) $this->redirect('/');
+  if (!in_array(Auth::user()['role'], ['doctor','admin'])) exit('Forbidden');
 
-    $pid = (int)($_GET['patient_id'] ?? 0);
-    $this->view('doctor/patient_report_create', [
-      'csrf' => Csrf::token(),
-      'patient_id' => $pid
-    ]);
+  $pid          = (int)($_GET['patient_id'] ?? 0);
+  $labReportId  = isset($_GET['lab_report_id']) ? (int)$_GET['lab_report_id'] : null;
+  $prefillTitle = trim($_GET['title'] ?? 'Report');
+
+  $this->view('doctor/patient_report_create', [
+    'csrf'          => Csrf::token(),
+    'patient_id'    => $pid,
+    'lab_report_id' => $labReportId,
+    'title'         => $prefillTitle,
+  ]);
+}
+
+
+public function addPatientReportStore(): void {
+  if (!Auth::check()) $this->redirect('/');
+  if (!Csrf::check($_POST['_token'] ?? '')) exit('CSRF');
+  if (!in_array(Auth::user()['role'], ['doctor','admin'])) exit('Forbidden');
+
+  $patientId    = (int)$_POST['patient_id'];
+  $doctorId     = Auth::user()['id'];
+  $title        = trim($_POST['title'] ?? 'Report');
+  $body         = trim($_POST['body'] ?? '');
+  $labReportId  = isset($_POST['lab_report_id']) ? (int)$_POST['lab_report_id'] : null;
+
+  // Create doctor report
+  $patientReportId = PatientReport::create($patientId, $doctorId, $title, $body);
+
+  // If the schema has lab_report_id (it does in your working code), link it.
+  if ($labReportId) {
+    $st = DB::pdo()->prepare("UPDATE patient_reports SET lab_report_id=? WHERE id=?");
+    $st->execute([$labReportId, $patientReportId]);
   }
 
-  public function addPatientReportStore(): void {
-    if (!Auth::check()) $this->redirect('/');
-    if (!Csrf::check($_POST['_token'] ?? '')) exit('CSRF');
-    if (!in_array(Auth::user()['role'], ['doctor','admin'])) exit('Forbidden');
+  $_SESSION['flash'] = 'Patient report saved.';
+  $this->redirect('/doctor/patient?id='.$patientId);
+}
 
-    PatientReport::create(
-      (int)$_POST['patient_id'],
-      Auth::user()['id'],
-      trim($_POST['title'] ?? 'Report'),
-      trim($_POST['body'] ?? '')
-    );
-
-    $_SESSION['flash'] = 'Patient report saved.';
-    $this->redirect('/doctor/patient?id='.(int)$_POST['patient_id']);
-  }
 
   /** Overview list of lab reports and pending orders */
   public function labReports(): void {
