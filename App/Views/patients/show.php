@@ -1,3 +1,14 @@
+<!-- Page header (non-sticky) -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-center gap-2">
+    <a class="btn btn-sm btn-outline-secondary" href="<?= APP_URL ?>/patients">← Back to Patients</a>
+    <h1 class="h5 mb-0">Patient · <?= htmlspecialchars(($p['first_name'] ?? '').' '.($p['last_name'] ?? '')) ?></h1>
+  </div>
+  <?php if(!empty($p['code'])): ?>
+    <span class="badge bg-light text-dark border">Code: <?= htmlspecialchars($p['code']) ?></span>
+  <?php endif; ?>
+</div>
+
 <h1 class="h4 mb-3">Patient · <?= htmlspecialchars($p['first_name'].' '.$p['last_name']) ?> (<?= htmlspecialchars($p['patient_no']) ?>)</h1>
 
 <div class="row g-3">
@@ -16,17 +27,18 @@
     </div>
   </div>
 
-  <div class="col-lg-6">
-    <div class="card">
-      <div class="card-header"><strong>Quick Actions</strong></div>
-      <div class="card-body d-grid gap-2">
-        <?php if(in_array(($role ?? ''),['doctor','admin'])): ?>
-          <a class="btn btn-primary" href="<?= APP_URL ?>/doctor/prescribe?patient_id=<?= (int)$p['id'] ?>">Add Prescription</a>
-          <a class="btn btn-outline-secondary" href="<?= APP_URL ?>/doctor/lab-order?patient_id=<?= (int)$p['id'] ?>">Schedule Lab Test</a>
-          <a class="btn btn-outline-secondary" href="<?= APP_URL ?>/doctor/patient-report?patient_id=<?= (int)$p['id'] ?>">Add Patient Report</a>
-        <?php endif; ?>
-        <a class="btn btn-outline-light" href="<?= APP_URL ?>/patients">Back to Patients</a>
-      </div>
+ <div class="col-lg-6">
+  <div class="card">
+    <div class="card-header"><strong>Quick Actions</strong></div>
+    <div class="card-body d-grid gap-2">
+      <?php if(in_array(($role ?? ''), ['doctor','admin'])): ?>
+        <a class="btn btn-primary" href="<?= APP_URL ?>/doctor/prescribe?patient_id=<?= (int)$p['id'] ?>">Add Prescription</a>
+        <a class="btn btn-outline-secondary" href="<?= APP_URL ?>/doctor/lab-order?patient_id=<?= (int)$p['id'] ?>">Schedule Lab Test</a>
+        <a class="btn btn-outline-secondary" href="<?= APP_URL ?>/doctor/patient-report?patient_id=<?= (int)$p['id'] ?>">Add Patient Report</a>
+      <?php endif; ?>
     </div>
+  </div>
+</div>
+
   </div>
 </div>

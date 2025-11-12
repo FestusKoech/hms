@@ -358,6 +358,25 @@ public function patientReportStore(): void {
     $_SESSION['flash'] = 'Write a report before saving.';
     $this->redirect('/doctor/patient-report?patient_id='.$pid.'&lab_report_id='.$lrid);
   }
+  // ---- OPTIONAL: mark the related lab order as 'reported' after saving the doctor note
+try {
+  $pdo = \App\Core\DB::pdo();
+
+  // If lab_reports has an order_id, update that specific order
+  $hasOrder = $pdo->query("SHOW COLUMNS FROM lab_reports LIKE 'order_id'")->fetch();
+  if ($hasOrder && $lrid > 0) {
+    $q = $pdo->prepare("SELECT order_id FROM lab_reports WHERE id = ?");
+    $q->execute([$lrid]);
+    $oid = (int)($q->fetchColumn() ?: 0);
+
+    if ($oid > 0) {
+      $pdo->prepare("UPDATE lab_orders SET status = 'reported' WHERE id = ?")->execute([$oid]);
+    }
+  }
+} catch (\Throwable $e) {
+  // quietly ignore; status can still be updated later from lab console
+}
+
 
   $pdo = \App\Core\DB::pdo();
   $saved = false;
@@ -422,9 +441,9 @@ public function patientReportStore(): void {
 
    $pid = (int)($_GET['patient_id'] ?? $_GET['id'] ?? 0);
     if ($pid <= 0) {
-      $_SESSION['flash'] = 'Select a patient first.';
-      $this->redirect('/doctor'); // or your doctor dashboard/patient search
-    }
+  $_SESSION['flash'] = 'Select a patient first.';
+  $this->redirect('/doctor/patients'); // takes you to the list with "Lab Order" actions
+}
 
     // Minimal patient header (privacy-preserving)
     $ps = \App\Core\DB::pdo()->prepare("
@@ -444,6 +463,14 @@ public function patientReportStore(): void {
       'patient' => $patient,
       'tests'   => $tests
     ]);
+    $preselect = (int)($_GET['test_id'] ?? 0);
+
+$this->view('doctor/lab_order_new', [
+  'csrf'     => Csrf::token(),
+  'patient'  => $patient,
+  'tests'    => $tests,
+  'preselect'=> $preselect,
+]);
   }
 
   public function labOrderStore(): void {
@@ -471,7 +498,7 @@ public function patientReportStore(): void {
 
   try {
     // Insert (your LabOrder model should return insert id)
-    $orderId = LabOrder::create($pid, $test, Auth::user()['id'], $notes !== '' ? $notes : null);
+    $orderId = LabOrder::create($pid, $test, Auth::user()['id']); // notes ignored for now
 
     if ($orderId) {
       $_SESSION['flash'] = 'Lab order placed.';
@@ -721,6 +748,82 @@ public function patientsScheduled(): void {
   $this->view('doctor/patients_scheduled', ['rows' => $rowsByPatient]);
 }
 
-
-
+//Patient queue
+public function queue(): void {
+  if (!Auth::check()) $this->redirect('/');
+  $items = \App\Models\Appointment::listUnclaimed();
+  $this->view('doctor/queue', ['items'=>$items,'csrf'=>\App\Core\Csrf::token()]);
 }
+
+public function claim(): void {
+  if (!Auth::check()) $this->redirect('/');
+  if (!\App\Core\Csrf::check($_POST['_token'] ?? '')) exit('CSRF');
+  $id  = (int)($_POST['appointment_id'] ?? 0);
+  $doc = (int)(Auth::user()['id'] ?? 0);
+
+  if ($id && $doc && \App\Models\Appointment::claim($id,$doc)) {
+    \App\Core\Helpers::flash('Appointment claimed. Start the encounter.','success');
+  } else {
+    \App\Core\Helpers::flash('Already claimed or status changed.','warning');
+  }
+  $this->redirect('/doctor/queue');
+}
+public function queueForDoctor(): void {
+  if (!\App\Core\Auth::check()) $this->redirect('/');
+  $role = \App\Core\Auth::user()['role'] ?? '';
+  if (!in_array($role, ['receptionist','admin'])) exit('Forbidden');
+
+  // Accept both GET (for quick test) and POST later
+  $pid  = (int)($_REQUEST['patient_id'] ?? 0);
+  $when = trim($_REQUEST['scheduled_at'] ?? ''); // optional
+
+  if ($pid <= 0) {
+    $_SESSION['flash'] = 'Select a patient first.';
+    $this->redirect('/reception/patients');
+  }
+
+  \App\Models\Appointment::createQueued($pid, $when ?: null);  // we added this helper earlier
+  $_SESSION['flash'] = 'Patient added to today’s doctor queue.';
+  $this->redirect('/reception/patients');
+}
+
+
+ public function scheduled(): void
+    {
+        if (!Auth::check()) $this->redirect('/');
+        if (!in_array(Auth::user()['role'] ?? '', ['doctor','admin'])) exit('Forbidden');
+
+        $pdo = DB::pdo();
+        // Unassigned scheduled appointments (any doctor can claim)
+        $unassigned = $pdo->query("
+            SELECT a.id, a.patient_id, a.starts_at, a.ends_at, a.reason, a.status,
+                   p.patient_no, p.first_name, p.last_name, p.sex, p.contact
+            FROM appointments a
+            JOIN patients p ON p.id = a.patient_id
+            WHERE a.status='scheduled' AND a.doctor_id IS NULL
+            ORDER BY a.starts_at ASC
+            LIMIT 200
+        ")->fetchAll();
+
+        // My in-progress (claimed by me)
+        $st = $pdo->prepare("
+            SELECT a.id, a.patient_id, a.starts_at, a.ends_at, a.reason, a.status,
+                   p.patient_no, p.first_name, p.last_name, p.sex, p.contact
+            FROM appointments a
+            JOIN patients p ON p.id = a.patient_id
+            WHERE a.status='in_progress' AND a.doctor_id = :doc
+            ORDER BY a.starts_at ASC
+            LIMIT 200
+        ");
+        $st->execute([':doc' => (int)Auth::user()['id']]);
+        $mine = $st->fetchAll();
+
+        $this->view('doctor/scheduled', [
+            'unassigned' => $unassigned,
+            'mine'       => $mine,
+            'csrf'       => Csrf::token(),
+        ]);
+    }
+
+    /** Claim an unassigned scheduled appointment → in_progress for this doctor */
+  }

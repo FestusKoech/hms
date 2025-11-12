@@ -277,6 +277,29 @@ public function reportShow(): void {
   $this->view('lab/report_show', ['rep' => $rep]);
 }
 
+public function testCreate(): void {
+  if (!\App\Core\Auth::check()) $this->redirect('/');
+  $role = \App\Core\Auth::user()['role'] ?? '';
+  if (!in_array($role, ['doctor','labtech','admin'])) exit('Forbidden');
+
+  if (!\App\Core\Csrf::check($_POST['_token'] ?? '')) { http_response_code(419); exit('CSRF'); }
+
+  $name      = trim($_POST['name'] ?? '');
+  $infection = trim($_POST['infection'] ?? ''); // optional
+  $patientId = (int)($_POST['patient_id'] ?? 0); // to return back to the same form
+
+  if ($name === '') {
+    $_SESSION['flash'] = 'Test name is required.';
+    $this->redirect('/doctor/lab-order?patient_id=' . $patientId);
+  }
+
+  // Create (returns new test id)
+  $testId = \App\Models\LabTest::create($name, $infection !== '' ? $infection : null);
+
+  $_SESSION['flash'] = 'New lab test added.';
+  // Redirect back to lab-order with the new test preselected
+  $this->redirect('/doctor/lab-order?patient_id=' . $patientId . '&test_id=' . (int)$testId);
+}
 
 
 }

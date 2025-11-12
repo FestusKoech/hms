@@ -3,12 +3,25 @@ namespace App\Models;
 use App\Core\DB;
 
 final class LabOrder {
-  public static function create(int $patientId,int $testId,int $doctorId): int {
-    DB::pdo()->prepare(
-      "INSERT INTO lab_orders(patient_id,test_id,ordered_by,status) VALUES(?,?,?,'ordered')"
-    )->execute([$patientId,$testId,$doctorId]);
-    return (int)DB::pdo()->lastInsertId();
+ public static function create(int $patientId, int $testId, int $doctorId, ?string $notes = null): int {
+  $pdo = DB::pdo();
+
+  // Try inserting with notes first; if the column doesn't exist, fall back.
+  try {
+    $sql = "INSERT INTO lab_orders (patient_id, test_id, ordered_by, status, order_notes)
+            VALUES (?, ?, ?, 'ordered', ?)";
+    $st  = $pdo->prepare($sql);
+    $st->execute([$patientId, $testId, $doctorId, $notes]);
+  } catch (\Throwable $e) {
+    // Fallback path for schemas without `order_notes`
+    $sql = "INSERT INTO lab_orders (patient_id, test_id, ordered_by, status)
+            VALUES (?, ?, ?, 'ordered')";
+    $st  = $pdo->prepare($sql);
+    $st->execute([$patientId, $testId, $doctorId]);
   }
+
+  return (int)$pdo->lastInsertId();
+}
   public static function pending(int $limit=100): array {
     $sql="SELECT o.id, o.created_at, p.first_name, p.last_name, lt.name AS test_name, u.name AS doctor
          FROM lab_orders o

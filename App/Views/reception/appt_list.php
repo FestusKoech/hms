@@ -14,6 +14,12 @@
       <a class="btn btn-primary btn-sm" href="<?= APP_URL ?>/reception/appointments/create?patient_id=<?= (int)$patient_id ?>">
         Schedule Appointment
       </a>
+      <form method="post" action="<?= APP_URL ?>/reception/queue" class="d-inline">
+  <input type="hidden" name="_token" value="<?= htmlspecialchars(\App\Core\Csrf::token()) ?>">
+  <input type="hidden" name="patient_id" value="<?= (int)$patient_id ?>">
+  <button class="btn btn-outline-primary btn-sm">Add to Doctor Queue</button>
+</form>
+
       <a class="btn btn-outline-secondary btn-sm" href="<?= APP_URL ?>/reception/patients?patient_id=<?= (int)$patient_id ?>">
         Back
       </a>

@@ -44,6 +44,24 @@ $p = $patient ?? [];
                 <option value="<?= (int)$t['id'] ?>"><?= htmlspecialchars($t['name']) ?></option>
               <?php endforeach; ?>
             </select>
+            <div class="col-12 col-md-6">
+  <label class="form-label">Lab Test</label>
+  <div class="d-flex gap-2">
+    <select class="form-select" name="test_id" required>
+      <option value="">— Select a test —</option>
+      <?php foreach ($tests as $t): ?>
+        <option value="<?= (int)$t['id'] ?>"
+          <?php if (!empty($preselect) && (int)$preselect === (int)$t['id']) echo 'selected'; ?>>
+          <?= htmlspecialchars($t['name']) ?>
+        </option>
+      <?php endforeach; ?>
+    </select>
+    <button type="button" class="btn btn-outline-secondary"
+            data-bs-toggle="modal" data-bs-target="#addTestModal">+ New</button>
+  </div>
+</div>
+
+            
           </div>
         </div>
 
@@ -84,5 +102,36 @@ $p = $patient ?? [];
         <a class="btn btn-outline-secondary btn-sm w-100" href="<?= APP_URL ?>/lab/pending">Go to Lab Pending</a>
       </div>
     </div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="addTestModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" method="post" action="<?= APP_URL ?>/lab/test/create" autocomplete="off">
+      <input type="hidden" name="_token" value="<?= htmlspecialchars($csrf ?? '') ?>">
+      <input type="hidden" name="patient_id" value="<?= (int)($p['id'] ?? 0) ?>">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Lab Test</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Test name</label>
+          <input class="form-control" name="name" placeholder="e.g., Widal, Malaria RDT, FBC" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Infection / Category (optional)</label>
+          <input class="form-control" name="infection" placeholder="e.g., Typhoid, Malaria, Hematology">
+          <div class="form-text">Optional; leave blank if not applicable.</div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary">Save Test</button>
+      </div>
+    </form>
   </div>
 </div>

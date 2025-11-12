@@ -97,6 +97,16 @@ $r->get('/doctor/patients', [\App\Controllers\DoctorController::class, 'patients
 // Doctor adds a clinical report after lab results
 $r->get('/doctor/patient-report',  [\App\Controllers\DoctorController::class, 'patientReportForm']);   // ?patient_id=&lab_report_id=
 $r->post('/doctor/patient-report', [\App\Controllers\DoctorController::class, 'patientReportStore']);
+// Lab: create a new test (doctor/labtech/admin)
+$r->post('/lab/test/create', [\App\Controllers\LabController::class, 'testCreate']);
+
+// Reception → queue patient for doctor (no specific doctor)
+$r->post('/reception/queue', [\App\Controllers\ReceptionController::class, 'queueForDoctor']);
+
+// Doctor → view unassigned queue (today) + claim an item
+$r->get('/doctor/queue',        [\App\Controllers\DoctorController::class, 'queue']);
+$r->post('/doctor/queue/claim', [\App\Controllers\DoctorController::class, 'queueClaim']);
+
 
 
 
@@ -133,6 +143,32 @@ $r->post('/admin/users/store',    [\App\Controllers\AdminUsersController::class,
 $r->get('/admin/users/edit',      [\App\Controllers\AdminUsersController::class,'edit']);   // ?id=
 $r->post('/admin/users/update',   [\App\Controllers\AdminUsersController::class,'update']);
 $r->post('/admin/users/delete',   [\App\Controllers\AdminUsersController::class,'delete']);
+
+
+
+
+// Mark an appointment as completed (latest scheduled for patient)
+$r->post('/appointments/complete', [\App\Controllers\AppointmentsController::class, 'complete']);
+
+$r->post('/appointments/complete', [\App\Controllers\AppointmentsController::class, 'complete']); 
+
+
+$r->get('/doctor/queue', [\App\Controllers\DoctorController::class,'queue']);
+$r->post('/doctor/claim', [\App\Controllers\DoctorController::class,'claim']);
+
+$r->get('/doctor/scheduled', [\App\Controllers\DoctorController::class, 'scheduled']);
+$r->post('/doctor/claim',    [\App\Controllers\DoctorController::class, 'claim']);
+
+
+
+// Reception
+
+
+
     $r->dispatch();
+
+
+
+
   }
 }

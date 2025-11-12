@@ -1,11 +1,15 @@
 <?php /* Doctor Dashboard — Quick Links only */ ?>
 <style>
 .sticky-toolbar {
-  position: sticky; top: 0; z-index: 1030;
-  background: #fff; border: 1px solid #e6e6ea; border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.04);
+  position: static;   /* was sticky */
+  top: auto;
+  background: #fff;
+  border: 1px solid #e6e6ea;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.05);
+  padding: 12px;
 }
-.sticky-toolbar .btn { border-radius: 999px; }
+.card .btn { border-radius: 999px; }
 #workPane { min-height: 380px; }
 .loader { display: grid; place-items: center; min-height: 260px; color: #6b6f76; }
 

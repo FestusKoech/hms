@@ -9,18 +9,37 @@ $r = $rep ?? [];
   </div>
 <?php endif; ?>
 
+<!-- Sticky toolbar (stays on top) -->
+<!-- Simple page header (non-sticky, no duplicate nav) -->
 <div class="d-flex align-items-center justify-content-between mb-3">
-  <h1 class="h5 mb-0">
-    Lab Report
-    <span class="text-muted">· #<?= (int)($r['id'] ?? 0) ?></span>
-  </h1>
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary btn-sm" href="<?= APP_URL ?>/lab/completed">Completed</a>
-    <a class="btn btn-outline-secondary btn-sm" href="<?= APP_URL ?>/lab/search">Search</a>
+  <div class="d-flex align-items-center gap-2">
+    <a class="btn btn-sm btn-outline-secondary" href="<?= APP_URL ?>/lab/pending">← Back</a>
+    <h1 class="h5 mb-0">
+      Lab Report <span class="text-muted">· #<?= (int)($r['id'] ?? 0) ?></span>
+    </h1>
   </div>
+  <?php if(!empty($r['code'])): ?>
+    <span class="badge bg-light text-dark border">Patient: <?= htmlspecialchars($r['code']) ?></span>
+  <?php endif; ?>
 </div>
 
-<div class="row g-3">
+
+<!-- Inline Quick Panel (placeholder; hidden by default) -->
+<!-- <div id="quickPanel" class="card mb-3 d-none">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span id="qpTitle" class="fw-semibold">Quick Panel</span>
+    <button type="button" class="btn-close" aria-label="Close"
+            onclick="document.getElementById('quickPanel').classList.add('d-none')"></button>
+  </div>
+  <div id="qpBody" class="card-body">
+    <div class="text-muted small">Use the toolbar buttons above to load content here.</div>
+  </div>
+</div> -->
+
+<div class="container-fluid px-0">
+  <div class="row g-3">
+
+
   <!-- Left: Report content -->
   <div class="col-12 col-lg-8">
     <div class="card">
@@ -82,10 +101,54 @@ $r = $rep ?? [];
           <span class="badge bg-success">reported</span>
         </div>
       </div>
-      <div class="card-footer d-flex gap-2">
-        <a class="btn btn-outline-secondary btn-sm flex-fill" href="<?= APP_URL ?>/lab/search">Search</a>
-        <a class="btn btn-outline-secondary btn-sm flex-fill" href="<?= APP_URL ?>/lab/pending">Pending</a>
-      </div>
+      
     </div>
   </div>
 </div>
+
+  </div> <!-- /.row -->
+</div>   <!-- /.container-fluid -->
+
+<script>
+(function(){
+  const panel   = document.getElementById('quickPanel');
+  const body    = document.getElementById('qpBody');
+  const titleEl = document.getElementById('qpTitle');
+
+  // click handlers for toolbar buttons
+  document.addEventListener('click', async function(e){
+    const btn = e.target.closest('[data-ajax-panel]');
+    if (!btn) return;
+    e.preventDefault();
+
+    const url   = btn.getAttribute('data-url');
+    const title = btn.getAttribute('data-title') || 'Quick Panel';
+
+    await loadIntoPanel(url, title);
+  });
+
+  // submit handler for the toolbar search form
+  window.openQuickPanel = async function(ev, baseUrl, title, q){
+    ev.preventDefault();
+    if (!q || !q.trim()) return;
+    const url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'q=' + encodeURIComponent(q.trim());
+    await loadIntoPanel(url, title);
+  };
+
+  async function loadIntoPanel(url, title){
+    panel.classList.remove('d-none');
+    titleEl.textContent = title;
+    body.innerHTML = '<div class="text-muted small">Loading…</div>';
+    try {
+      // Optionally append ?partial=1 if your routes support partial rendering.
+      const res = await fetch(url, { credentials: 'same-origin' });
+      const html = await res.text();
+      body.innerHTML = html;
+    } catch (err) {
+      body.innerHTML = '<div class="text-danger small">Failed to load content.</div>';
+    }
+    // Optional: scroll to panel when opened
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+})();
+</script>

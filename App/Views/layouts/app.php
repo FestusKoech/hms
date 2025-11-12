@@ -44,12 +44,27 @@
     .main.guest{ margin-left:0; }
   </style>
 </head>
+
+
 <body>
+
+
+
 <?php
   $user = Auth::user();               // may be null
   $role = $user['role'] ?? '';        // safe default
-  $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
-  $is = function(string $prefix) use ($path){ return str_starts_with($path, $prefix) ? 'active' : ''; };
+
+  // --- Robust active-link helper (matches Router normalization) ---
+  $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '/';
+  $basePath    = rtrim(parse_url(APP_URL, PHP_URL_PATH) ?? '', '/');     // e.g. /hms/public
+  $relPath     = '/' . ltrim(str_replace($basePath, '', $requestPath), '/'); // e.g. /doctor/lab-order
+
+  $is = function(string $uri) use ($basePath, $relPath) {
+    // Accept both absolute (APP_URL.'/x') or bare ('/x')
+    $targetPath = parse_url($uri, PHP_URL_PATH) ?? $uri;
+    $targetPath = '/' . ltrim(str_replace($basePath, '', $targetPath), '/');
+    return str_starts_with($relPath, $targetPath) ? 'active' : '';
+  };
 ?>
 
 <!-- Sidebar only when logged in -->
@@ -64,47 +79,79 @@
 
   <div class="nav-section">
     <div class="group-label">General</div>
-    <a href="<?= APP_URL ?>/dashboard" class="nav-link <?= $is(APP_URL.'/dashboard') ?>"><i class="bi bi-house nav-icon"></i> Dashboard</a>
-    <a href="<?= APP_URL ?>/patients" class="nav-link <?= $is(APP_URL.'/patients') ?>"><i class="bi bi-person nav-icon"></i> Patients</a>
-    <a href="<?= APP_URL ?>/appointments" class="nav-link <?= $is(APP_URL.'/appointments') ?>"><i class="bi bi-calendar nav-icon"></i> Appointments</a>
+    <a href="<?= APP_URL ?>/dashboard" class="nav-link <?= $is(APP_URL.'/dashboard') ?>">
+      <i class="bi bi-house nav-icon"></i> Dashboard
+    </a>
   </div>
 
-  <?php if(in_array($role,['doctor','admin'])): ?>
+  <?php if (in_array($role, ['doctor','admin'])): ?>
   <div class="nav-section">
     <div class="group-label">Doctor</div>
-    <a href="<?= APP_URL ?>/doctor/appointments" class="nav-link <?= $is(APP_URL.'/doctor/appointments') ?>"><i class="bi bi-calendar-check nav-icon"></i> Appointments</a>
-    <a href="<?= APP_URL ?>/doctor/patients" class="nav-link <?= $is(APP_URL.'/doctor/patients') ?>"><i class="bi bi-people nav-icon"></i> Patients (Scheduled)</a>
-    <a href="<?= APP_URL ?>/doctor/lab-order" class="nav-link <?= $is(APP_URL.'/doctor/lab-order') ?>"><i class="bi bi-plus-circle-dotted nav-icon"></i> New Lab Order</a>
-    <a href="<?= APP_URL ?>/lab/completed" class="nav-link <?= $is(APP_URL.'/lab/completed') ?>"><i class="bi bi-clipboard2-check nav-icon"></i> Lab Reports</a>
+
+    <a href="<?= APP_URL ?>/doctor/appointments" class="nav-link <?= $is(APP_URL.'/doctor/appointments') ?>">
+      <i class="bi bi-calendar-check nav-icon"></i> Appointments
+    </a>
+
+    <a href="<?= APP_URL ?>/doctor/patients" class="nav-link <?= $is(APP_URL.'/doctor/patients') ?>">
+      <i class="bi bi-people nav-icon"></i> Patients (Scheduled)
+    </a>
+
+    <a href="<?= APP_URL ?>/doctor/lab-order" class="nav-link <?= $is(APP_URL.'/doctor/lab-order') ?>">
+      <i class="bi bi-plus-square nav-icon"></i> New Lab Order
+    </a>
+
+    <a href="<?= APP_URL ?>/lab/completed" class="nav-link <?= $is(APP_URL.'/lab/completed') ?>">
+      <i class="bi bi-clipboard2-check nav-icon"></i> Lab Reports
+    </a>
   </div>
+
+
+  <a href="<?= APP_URL ?>/doctor/queue" class="nav-link <?= $is(APP_URL.'/doctor/queue') ?>">
+  <i class="bi bi-list-ul nav-icon"></i> Triage Queue
+</a>
+
   <?php endif; ?>
 
-  <?php if(in_array($role,['labtech','admin'])): ?>
+  <?php if (in_array($role, ['labtech','admin','doctor'])): ?>
   <div class="nav-section">
     <div class="group-label">Lab</div>
-    <a href="<?= APP_URL ?>/lab/search" class="nav-link <?= $is(APP_URL.'/lab/search') ?>"><i class="bi bi-search nav-icon"></i> Search</a>
-    <a href="<?= APP_URL ?>/lab/pending" class="nav-link <?= $is(APP_URL.'/lab/pending') ?>"><i class="bi bi-hourglass-split nav-icon"></i> Pending</a>
-    <a href="<?= APP_URL ?>/lab/completed" class="nav-link <?= $is(APP_URL.'/lab/completed') ?>"><i class="bi bi-check2-circle nav-icon"></i> Completed</a>
+    <a href="<?= APP_URL ?>/lab/search" class="nav-link <?= $is(APP_URL.'/lab/search') ?>">
+      <i class="bi bi-search nav-icon"></i> Search
+    </a>
+    <a href="<?= APP_URL ?>/lab/pending" class="nav-link <?= $is(APP_URL.'/lab/pending') ?>">
+      <i class="bi bi-hourglass-split nav-icon"></i> Pending
+    </a>
+    <a href="<?= APP_URL ?>/lab/completed" class="nav-link <?= $is(APP_URL.'/lab/completed') ?>">
+      <i class="bi bi-check2-circle nav-icon"></i> Completed
+    </a>
   </div>
   <?php endif; ?>
 
-  <?php if(in_array($role,['pharmacist','admin']) || in_array($role,['receptionist','admin'])): ?>
+  <?php if (in_array($role, ['pharmacist','admin']) || in_array($role, ['receptionist','admin'])): ?>
   <div class="nav-section">
     <div class="group-label">Front Desk</div>
-    <?php if(in_array($role,['pharmacist','admin'])): ?>
-      <a href="<?= APP_URL ?>/pharmacy/drugs" class="nav-link <?= $is(APP_URL.'/pharmacy/drugs') ?>"><i class="bi bi-capsule nav-icon"></i> Pharmacy</a>
-      <a href="<?= APP_URL ?>/pharmacy/fulfill" class="nav-link <?= $is(APP_URL.'/pharmacy/fulfill') ?>"><i class="bi bi-clipboard-check nav-icon"></i> Fulfill Rx</a>
+    <?php if (in_array($role, ['pharmacist','admin'])): ?>
+      <a href="<?= APP_URL ?>/pharmacy/drugs" class="nav-link <?= $is(APP_URL.'/pharmacy/drugs') ?>">
+        <i class="bi bi-capsule nav-icon"></i> Pharmacy
+      </a>
+      <a href="<?= APP_URL ?>/pharmacy/fulfill" class="nav-link <?= $is(APP_URL.'/pharmacy/fulfill') ?>">
+        <i class="bi bi-clipboard-check nav-icon"></i> Fulfill Rx
+      </a>
     <?php endif; ?>
-    <?php if(in_array($role,['receptionist','admin'])): ?>
-      <a href="<?= APP_URL ?>/reception/patients" class="nav-link <?= $is(APP_URL.'/reception') ?>"><i class="bi bi-journal-medical nav-icon"></i> Reception</a>
+    <?php if (in_array($role, ['receptionist','admin'])): ?>
+      <a href="<?= APP_URL ?>/reception/patients" class="nav-link <?= $is(APP_URL.'/reception') ?>">
+        <i class="bi bi-journal-medical nav-icon"></i> Reception
+      </a>
     <?php endif; ?>
   </div>
   <?php endif; ?>
 
-  <?php if($role==='admin'): ?>
+  <?php if ($role === 'admin'): ?>
   <div class="nav-section">
     <div class="group-label">Admin</div>
-    <a href="<?= APP_URL ?>/admin/users" class="nav-link <?= $is(APP_URL.'/admin/users') ?>"><i class="bi bi-people-gear nav-icon"></i> Manage Staff</a>
+    <a href="<?= APP_URL ?>/admin/users" class="nav-link <?= $is(APP_URL.'/admin/users') ?>">
+      <i class="bi bi-people-gear nav-icon"></i> Manage Staff
+    </a>
   </div>
   <?php endif; ?>
 </nav>

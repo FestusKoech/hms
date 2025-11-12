@@ -66,8 +66,72 @@ public function fulfillAction(): void {
   \App\Models\PharmacyDispense::log($itemId,$qty,\App\Core\Auth::user()['id']);
 
   $_SESSION['flash']='Dispense recorded.';
+  $_SESSION['checkout_patient_id'] = (int)($_POST['patient_id'] ?? 0);
+$_SESSION['checkout_back'] = APP_URL . '/pharmacy/fulfill';
   $this->redirect('/pharmacy/fulfill');
 }
+
+
+
+
+
+public function dispense(): void
+{
+    \App\Core\Csrf::validateOrThrow($_POST['_token'] ?? '');
+
+    $prescriptionId = (int)($_POST['prescription_id'] ?? 0);
+    $patientId      = (int)($_POST['patient_id'] ?? 0);
+
+    $pdo = \App\Core\DB::pdo();
+
+    try {
+        // 1) Mark prescription dispensed
+        $stmt = $pdo->prepare("UPDATE prescriptions SET status='dispensed', dispensed_at=NOW() WHERE id=:id");
+        $stmt->execute([':id' => $prescriptionId]);
+
+        // 2) Complete the patient's latest open appointment (scheduled or in_progress)
+        if ($patientId > 0) {
+            $stmt = $pdo->prepare("
+                SELECT id FROM appointments
+                WHERE patient_id = :pid AND status IN ('scheduled','in_progress')
+                ORDER BY starts_at DESC
+                LIMIT 1
+            ");
+            $stmt->execute([':pid' => $patientId]);
+            $appointmentId = (int)$stmt->fetchColumn();
+
+            if ($appointmentId > 0) {
+                $pdo->prepare("UPDATE appointments SET status='completed' WHERE id=:id")
+                    ->execute([':id' => $appointmentId]);
+            }
+        }
+
+        // 3) If AJAX, respond JSON; otherwise redirect
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+                  strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => true]);
+            return;
+        }
+
+        $_SESSION['flash'] = 'Drugs dispensed.';
+        header('Location: ' . APP_URL . '/pharmacy/fulfill'); exit;
+
+    } catch (\Throwable $e) {
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+                  strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+        if ($isAjax) {
+            header('Content-Type: application/json', true, 500);
+            echo json_encode(['error' => $e->getMessage()]);
+            return;
+        }
+        $_SESSION['flash'] = 'Error: ' . $e->getMessage();
+        header('Location: ' . APP_URL . '/pharmacy/fulfill'); exit;
+    }
+}
+
 
 
 }
