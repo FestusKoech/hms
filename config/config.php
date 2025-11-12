@@ -6,3 +6,7 @@ const DB_NAME='hms';
 const DB_USER='root';
 const DB_PASS='';
 const DB_CHARSET='utf8mb4';
+
+
+
+

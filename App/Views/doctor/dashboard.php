@@ -19,33 +19,10 @@
 .hero-mini .sub { opacity:.9; font-size:13px; }
 </style>
 
-<div class="hero-mini">
-  <h2>Doctor Console</h2>
-  <div class="sub">Quick access to Patients, Labs, Pharmacy and Orders</div>
-</div>
 
-<!-- Fixed Quick Links (single work pane) -->
-<div class="p-3 sticky-toolbar mb-3 d-flex flex-wrap align-items-center gap-2">
-  <span class="section-title mb-0 me-2">Quick Links</span>
-  <div class="btn-group" role="group" aria-label="Quick Links">
-    <button type="button" class="btn btn-primary active"
-            data-url="<?= APP_URL ?>/doctor/search">Search Patients</button>
-    <button type="button" class="btn btn-outline-secondary"
-            data-url="<?= APP_URL ?>/patients">All Patients</button>
-    <button type="button" class="btn btn-outline-secondary"
-            data-url="<?= APP_URL ?>/doctor/lab-reports">Lab Activity</button>
-    <button type="button" class="btn btn-outline-secondary"
-            data-url="<?= APP_URL ?>/pharmacy/fulfill">Pharmacy</button>
-    <button type="button" class="btn btn-outline-secondary"
-            data-url="<?= APP_URL ?>/lab/orders">Lab Orders</button>
-  </div>
-</div>
 
-<div class="card">
-  <div class="card-body" id="workPane">
-    <div class="loader">Loading…</div>
-  </div>
-</div>
+
+
 
 <script>
 (function(){

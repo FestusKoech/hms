@@ -6,9 +6,11 @@ use App\Models\{Patient,LabTest,LabReport};
 final class LabController extends Controller {
   public function index(): void {
     if(!Auth::check()) $this->redirect('/');
-    if(!in_array(Auth::user()['role'], ['labtech','admin'])) exit('Forbidden');
+    if(!in_array(Auth::user()['role'], ['labtech','admin', 'doctor'])) exit('Forbidden');
     $this->view('lab/index',['items'=>LabReport::latest(50)]);
   }
+
+  
 
   public function create(): void {
     if(!Auth::check()) $this->redirect('/');
@@ -47,69 +49,101 @@ public function reportFromOrderStore(): void {
   $order = \App\Models\LabOrder::find($orderId);
   if (!$order) $this->redirect('/lab/orders');
 
-  $user = \App\Core\Auth::user();
-  $now  = date('Y-m-d H:i:s');
+  $pdo   = \App\Core\DB::pdo();
+  $user  = \App\Core\Auth::user();
+  $now   = date('Y-m-d H:i:s');
+  $value = $_POST['result_value'] ?? null;
+  $text  = $_POST['result_text']  ?? null;
 
-  // 1) Create the lab report (your current behavior)
+  // --- Feature-detect if lab_reports.order_id exists ---
+  $hasOrderId = false;
+  try {
+    // Will throw if column doesn't exist
+    $pdo->query("SELECT order_id FROM lab_reports LIMIT 1");
+    $hasOrderId = true;
+  } catch (\Throwable $e) { /* no order_id column */ }
+
+  // --- If a report already exists for this order, update it instead of creating a new one ---
+  if ($hasOrderId) {
+    $check = $pdo->prepare("SELECT id FROM lab_reports WHERE order_id = ? LIMIT 1");
+    $check->execute([$orderId]);
+    $existingId = $check->fetchColumn();
+
+    if ($existingId) {
+      $upd = $pdo->prepare("
+        UPDATE lab_reports
+        SET result_value = ?, result_text = ?, reported_by = ?, reported_at = ?
+        WHERE id = ?
+      ");
+      $upd->execute([$value, $text, $user['id'], $now, $existingId]);
+
+      \App\Models\LabOrder::markReported($orderId);
+      $_SESSION['flash'] = 'Report updated for this order.';
+      $this->redirect('/lab/report?id=' . (int)$existingId);
+      return;
+    }
+  }
+
+  // --- Otherwise: create fresh report (legacy-compatible) ---
   $labReportId = \App\Models\LabReport::create([
     'patient_id'   => $order['patient_id'],
     'test_id'      => $order['test_id'],
-    'ordered_by'   => $order['ordered_by'],
-    'result_value' => $_POST['result_value'] ?? null,
-    'result_text'  => $_POST['result_text'] ?? null,
+    'ordered_by'   => $order['ordered_by'] ?? null,
+    'result_value' => $value,
+    'result_text'  => $text,
     'reported_by'  => $user['id'],
     'reported_at'  => $now,
   ]);
 
-  // 2) Mark the order reported (your current behavior)
-  \App\Models\LabOrder::markReported($orderId);
-
-  // 3) OPTIONAL stamps (only if columns exist) — wrapped in try/catch so it never breaks your current schema
-  $pdo = \App\Core\DB::pdo();
-  try {
-    // Link report to order if `order_id` exists on lab_reports
-    $pdo->exec("UPDATE lab_reports SET order_id = order_id WHERE 1=0"); // feature-detect column
-    $stmt = $pdo->prepare("UPDATE lab_reports SET order_id=? WHERE id=?");
+  // Stamp order_id if the column exists (no-op if absent)
+  if ($hasOrderId) {
+    $stmt = $pdo->prepare("UPDATE lab_reports SET order_id = ? WHERE id = ?");
     $stmt->execute([$orderId, $labReportId]);
-  } catch (\Throwable $e) {
-    // Column doesn't exist or no perms — ignore silently
   }
 
-  try {
-    // Stamp who added the findings if columns exist (added_by_user_id, added_by_role)
-    $pdo->exec("UPDATE lab_reports SET added_by_user_id = added_by_user_id WHERE 1=0");
-    $stmt = $pdo->prepare("UPDATE lab_reports SET added_by_user_id=?, added_by_role=? WHERE id=?");
-    $stmt->execute([$user['id'], 'lab', $labReportId]);
-  } catch (\Throwable $e) {
-    // Columns not present — ignore
-  }
-
-  // 4) Flash + redirect
+  \App\Models\LabOrder::markReported($orderId);
   $_SESSION['flash'] = 'Report saved for the order.';
-  $this->redirect('/lab/orders');
+  $this->redirect('/lab/report?id='.(int)$labReportId);
 }
 
 
 //Search funtion in lab
 public function search(): void {
+  // roles: allow labtech/admin; add 'doctor' here if you want read-only access
   if (!\App\Core\Auth::check()) $this->redirect('/');
   if (!in_array(\App\Core\Auth::user()['role'], ['labtech','admin'])) exit('Forbidden');
 
   $q = trim($_GET['q'] ?? '');
   $results = [];
+
   if ($q !== '') {
-    $like = '%'.$q.'%';
-    $idMaybe = ctype_digit($q) ? (int)$q : 0;
+    // normalize inputs
+    $like    = '%'.$q.'%';
+    $idMaybe = ctype_digit($q) ? (int)$q : -1;
+
+    // If user typed something like P013, match it exactly & via LIKE
+    $qUpper   = strtoupper($q);
+    $codeEq   = preg_match('/^P\d+$/i', $qUpper) ? $qUpper : 'NO_MATCH_CODE_EQ';
+    $codeLike = '%'.$qUpper.'%';
+
     $st = \App\Core\DB::pdo()->prepare("
-      SELECT id, first_name, last_name, code
+      SELECT id,
+             first_name,
+             last_name,
+             CONCAT('P', LPAD(id, 3, '0')) AS code
       FROM patients
-      WHERE first_name LIKE ? OR last_name LIKE ? OR code LIKE ? OR id=?
+      WHERE first_name LIKE ?
+         OR last_name  LIKE ?
+         OR id = ?
+         OR CONCAT('P', LPAD(id, 3, '0')) = ?
+         OR CONCAT('P', LPAD(id, 3, '0')) LIKE ?
       ORDER BY id DESC
       LIMIT 25
     ");
-    $st->execute([$like,$like,$like,$idMaybe]);
+    $st->execute([$like, $like, $idMaybe, $codeEq, $codeLike]);
     $results = $st->fetchAll();
   }
+
   $this->view('lab/search', ['q'=>$q, 'results'=>$results]);
 }
 
@@ -123,13 +157,17 @@ public function patientPanel(): void {
   if ($pid <= 0) $this->redirect('/lab/search');
 
   // Patient header (minimal)
-  $ps = \App\Core\DB::pdo()->prepare("SELECT id, first_name, last_name, code FROM patients WHERE id=?");
+  $ps = \App\Core\DB::pdo()->prepare("
+  SELECT id, first_name, last_name,
+         CONCAT('P', LPAD(id, 3, '0')) AS code
+  FROM patients WHERE id=?
+");
   $ps->execute([$pid]);
   $patient = $ps->fetch();
   if (!$patient) { $_SESSION['flash']='Patient not found.'; $this->redirect('/lab/search'); }
 
   // Orders for this patient
-  $os = \App\Core.DB::pdo()->prepare("
+  $os = \App\Core\DB::pdo()->prepare("
     SELECT o.id, o.status, o.created_at, lt.name AS test_name
     FROM lab_orders o
     JOIN lab_tests lt ON lt.id=o.test_id
@@ -148,16 +186,18 @@ public function pending(): void {
   if (!\App\Core\Auth::check()) $this->redirect('/');
   if (!in_array(\App\Core\Auth::user()['role'], ['labtech','admin'])) exit('Forbidden');
 
-  $st = \App\Core\DB::pdo()->query("
-    SELECT o.id, o.patient_id, lt.name AS test_name, o.created_at,
-           p.first_name, p.last_name, p.code
-    FROM lab_orders o
-    JOIN lab_tests lt ON lt.id=o.test_id
-    JOIN patients p ON p.id=o.patient_id
-    WHERE o.status='ordered'
-    ORDER BY o.created_at DESC
-    LIMIT 100
-  ");
+ $st = \App\Core\DB::pdo()->query("
+  SELECT o.id, o.patient_id, lt.name AS test_name, o.created_at,
+         p.first_name, p.last_name,
+         CONCAT('P', LPAD(p.id, 3, '0')) AS code
+  FROM lab_orders o
+  JOIN lab_tests lt ON lt.id=o.test_id
+  JOIN patients p   ON p.id=o.patient_id
+  WHERE o.status='ordered'
+  ORDER BY o.created_at DESC
+  LIMIT 100
+");
+
   $rows = $st->fetchAll();
 
   $this->view('lab/pending', ['rows'=>$rows]);
@@ -169,18 +209,19 @@ public function completed(): void {
   if (!\App\Core\Auth::check()) $this->redirect('/');
   if (!in_array(\App\Core\Auth::user()['role'], ['labtech','admin'])) exit('Forbidden');
 
-  $st = \App\Core\DB::pdo()->query("
-    SELECT r.id AS report_id, r.patient_id, r.reported_at, r.reported_by,
-           lt.name AS test_name,
-           p.first_name, p.last_name, p.code,
-           u.name AS reported_by_name
-    FROM lab_reports r
-    JOIN lab_tests lt  ON lt.id=r.test_id
-    JOIN patients p    ON p.id=r.patient_id
-    LEFT JOIN users u  ON u.id=r.reported_by
-    ORDER BY r.reported_at DESC
-    LIMIT 100
-  ");
+ $st = \App\Core\DB::pdo()->query("
+  SELECT r.id AS report_id, r.patient_id, r.reported_at, r.reported_by,
+         lt.name AS test_name,
+         p.first_name, p.last_name,
+         CONCAT('P', LPAD(p.id, 3, '0')) AS code,
+         u.name AS reported_by_name
+  FROM lab_reports r
+  JOIN lab_tests lt ON lt.id=r.test_id
+  JOIN patients p   ON p.id=r.patient_id
+  LEFT JOIN users u ON u.id=r.reported_by
+  ORDER BY r.reported_at DESC
+  LIMIT 100
+");
   $rows = $st->fetchAll();
 
   $this->view('lab/completed', ['rows'=>$rows]);
@@ -201,4 +242,41 @@ public function completed(): void {
     ]);
     $this->redirect('/lab');
   }
+
+//Report show
+public function reportShow(): void {
+  // allow labtech/admin; add 'doctor' if you want read-only doctor access
+  if (!\App\Core\Auth::check()) $this->redirect('/');
+  if (!in_array(\App\Core\Auth::user()['role'], ['labtech','admin'])) exit('Forbidden');
+
+  $rid = (int)($_GET['id'] ?? 0);
+  if ($rid <= 0) $this->redirect('/lab/completed');
+
+  $st = \App\Core\DB::pdo()->prepare("
+    SELECT r.id, r.patient_id, r.test_id, r.order_id,
+           r.result_value, r.result_text, r.reported_by, r.reported_at,
+           lt.name AS test_name,
+           p.first_name, p.last_name,
+           CONCAT('P', LPAD(p.id, 3, '0')) AS code,
+           u.name AS reported_by_name
+    FROM lab_reports r
+    JOIN lab_tests lt ON lt.id = r.test_id
+    JOIN patients  p  ON p.id  = r.patient_id
+    LEFT JOIN users u ON u.id  = r.reported_by
+    WHERE r.id = ?
+    LIMIT 1
+  ");
+  $st->execute([$rid]);
+  $rep = $st->fetch();
+
+  if (!$rep) {
+    $_SESSION['flash'] = 'Report not found.';
+    $this->redirect('/lab/completed');
+  }
+
+  $this->view('lab/report_show', ['rep' => $rep]);
+}
+
+
+
 }

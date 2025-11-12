@@ -56,24 +56,59 @@ $r->post('/doctor/prescribe',      [\App\Controllers\DoctorController::class,'pr
 
 $r->get('/doctor/patient-report',  [\App\Controllers\DoctorController::class,'addPatientReportForm']); // ?patient_id=
 $r->post('/doctor/patient-report', [\App\Controllers\DoctorController::class,'addPatientReportStore']);
-
-$r->get('/doctor/lab-order',       [\App\Controllers\DoctorController::class,'labOrderForm']);  // ?patient_id=
-$r->post('/doctor/lab-order',      [\App\Controllers\DoctorController::class,'labOrderStore']);
-$r->get('/lab/search',   [\App\Controllers\LabController::class,'search']);       // GET ?q=
-$r->get('/lab/patient',  [\App\Controllers\LabController::class,'patientPanel']); // GET ?id=
-$r->get('/lab/pending',  [\App\Controllers\LabController::class,'pending']);
-$r->get('/lab/completed',[\App\Controllers\LabController::class,'completed']);
+// Doctor shortcut to Lab activity (read-only)
+$r->get('/doctor/lab-reports', function () {
+    header('Location: ' . APP_URL . '/lab/completed');
+    exit;
+});
 
 
-$r->get('/doctor/lab-reports',     [\App\Controllers\DoctorController::class,'labReports']);
-$r->get('/doctor/lab-report',      [\App\Controllers\DoctorController::class,'labReportShow']); // ?id=
 
-// Lab (lab_technician)
-$r->get('/lab',                    [\App\Controllers\LabController::class,'index']);
-$r->get('/lab/create',             [\App\Controllers\LabController::class,'create']);
-$r->post('/lab/store',             [\App\Controllers\LabController::class,'store']);
+// --- LAB (keep these) ---
+$r->get('/lab',                    [\App\Controllers\LabController::class,'index']);          // landing
+$r->get('/lab/search',             [\App\Controllers\LabController::class,'search']);         // ?q=
+$r->get('/lab/patient',            [\App\Controllers\LabController::class,'patientPanel']);   // ?id=
+$r->get('/lab/pending',            [\App\Controllers\LabController::class,'pending']);
+$r->get('/lab/completed',          [\App\Controllers\LabController::class,'completed']);
+$r->get('/lab/search', [\App\Controllers\LabController::class, 'search']);
+$r->post('/lab/report-save', [\App\Controllers\LabController::class,'reportSave']);
 
-$r->get('/lab/orders',             [\App\Controllers\LabController::class,'orders']);
+
+$r->get('/lab/orders',             [\App\Controllers\LabController::class,'orders']);         // your legacy queue
+
+// Add Results flow (these two DO exist in your controller)
+$r->get('/lab/report-from-order',  [\App\Controllers\LabController::class,'reportFromOrderForm']);  // ?order_id=
+$r->post('/lab/report-from-order', [\App\Controllers\LabController::class,'reportFromOrderStore']);
+
+// --- LAB: add results + viewer ---
+$r->get('/lab/report-from-order',   [\App\Controllers\LabController::class,'reportFromOrder']); // GET ?order_id=
+$r->post('/lab/report-save',        [\App\Controllers\LabController::class,'reportSave']);      // POST
+$r->get('/lab/report',              [\App\Controllers\LabController::class,'reportShow']);      // GET ?id=
+$r->get('/doctor/lab-orders',      [\App\Controllers\DoctorController::class, 'labOrders']);
+$r->get('/doctor/lab-result',      [\App\Controllers\DoctorController::class, 'labResult']);
+
+
+
+// Doctor places a new lab order (GET form + POST submit)
+$r->get('/doctor/lab-order',  [\App\Controllers\DoctorController::class, 'labOrderForm']);   // ?patient_id=
+$r->post('/doctor/lab-order', [\App\Controllers\DoctorController::class, 'labOrderStore']);
+$r->get('/doctor/appointments', [\App\Controllers\DoctorController::class, 'appointments']);
+$r->get('/doctor/patients', [\App\Controllers\DoctorController::class, 'patientsScheduled']);
+// Doctor adds a clinical report after lab results
+$r->get('/doctor/patient-report',  [\App\Controllers\DoctorController::class, 'patientReportForm']);   // ?patient_id=&lab_report_id=
+$r->post('/doctor/patient-report', [\App\Controllers\DoctorController::class, 'patientReportStore']);
+
+
+
+// $r->get('/doctor/lab-reports',     [\App\Controllers\DoctorController::class,'labReports']);
+// $r->get('/doctor/lab-report',      [\App\Controllers\DoctorController::class,'labReportShow']); // ?id=
+
+// // Lab (lab_technician)
+// $r->get('/lab',                    [\App\Controllers\LabController::class,'index']);
+
+
+
+
 $r->get('/lab/report-from-order',  [\App\Controllers\LabController::class,'reportFromOrderForm']); // ?order_id=
 $r->post('/lab/report-from-order', [\App\Controllers\LabController::class,'reportFromOrderStore']);
 

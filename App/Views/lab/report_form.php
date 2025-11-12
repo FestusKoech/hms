@@ -1,7 +1,7 @@
 <?php
-/** @var array $order */
-/** @var string $csrf */
-$o = $order ?? [];
+/** @var array $ord */
+// $ord keys used: id, test_name, first_name, last_name, code, created_at, status (optional)
+$o = $ord ?? [];
 ?>
 <?php if(!empty($_SESSION['flash'])): ?>
   <div class="alert alert-success small">
@@ -23,25 +23,27 @@ $o = $order ?? [];
 <div class="row g-3">
   <!-- Left: Form -->
   <div class="col-12 col-lg-8">
-    <form class="card" method="post" action="<?= APP_URL ?>/lab/report-from-order" autocomplete="off">
+    <form class="card" method="post" action="<?= APP_URL ?>/lab/report-save" autocomplete="off">
       <div class="card-header d-flex align-items-center justify-content-between">
         <div>
           <div class="fw-semibold">Result Entry</div>
           <div class="small text-muted">Fill in the measured value and any narrative notes.</div>
         </div>
         <div>
-          <?php $status = $o['status'] ?? 'ordered'; ?>
-          <span class="badge bg-<?= $status === 'reported' ? 'success' : 'secondary' ?>">
-            <?= htmlspecialchars($status) ?>
-          </span>
+          <?php if (!empty($o['status'])): ?>
+            <span class="badge bg-<?= $o['status']==='reported' ? 'success' : 'secondary' ?>">
+              <?= htmlspecialchars($o['status']) ?>
+            </span>
+          <?php else: ?>
+            <span class="badge bg-secondary">ordered</span>
+          <?php endif; ?>
         </div>
       </div>
 
       <div class="card-body">
-        <input type="hidden" name="_token" value="<?= htmlspecialchars($csrf ?? '') ?>">
         <input type="hidden" name="order_id" value="<?= (int)($o['id'] ?? 0) ?>">
 
-        <!-- Context (disabled) -->
+        <!-- Read-only context fields (styled to match) -->
         <div class="row g-3 mb-1">
           <div class="col-12 col-md-6">
             <label class="form-label">Test</label>
@@ -65,7 +67,7 @@ $o = $order ?? [];
             <div class="form-text">Enter the numeric/qualitative value with unit if applicable.</div>
           </div>
           <div class="col-12 col-md-6">
-            <label class="form-label">Order Date</label>
+            <label class="form-label">Result Date</label>
             <input class="form-control"
                    value="<?= htmlspecialchars($o['created_at'] ?? '') ?>"
                    disabled>
@@ -77,8 +79,9 @@ $o = $order ?? [];
           <textarea class="form-control"
                     name="result_text"
                     rows="5"
-                    placeholder="Add narrative notes, interpretation, method, flags, etc."></textarea>
-          <div class="form-text">Avoid PII beyond what’s necessary. Visible to clinicians.</div>
+                    placeholder="Add narrative notes, interpretation, method, flags, etc."
+                    ></textarea>
+          <div class="form-text">Avoid PII beyond what’s necessary. This note is visible to clinicians.</div>
         </div>
       </div>
 
@@ -127,8 +130,10 @@ $o = $order ?? [];
         </div>
       </div>
       <div class="card-footer d-flex gap-2">
-        <a class="btn btn-outline-secondary btn-sm flex-fill" href="<?= APP_URL ?>/lab/pending">Pending Queue</a>
-        <a class="btn btn-outline-secondary btn-sm flex-fill" href="<?= APP_URL ?>/lab/completed">Completed</a>
+        <a class="btn btn-outline-secondary btn-sm flex-fill"
+           href="<?= APP_URL ?>/lab/pending">Pending Queue</a>
+        <a class="btn btn-outline-secondary btn-sm flex-fill"
+           href="<?= APP_URL ?>/lab/completed">Completed</a>
       </div>
     </div>
   </div>
