@@ -1,4 +1,6 @@
-Objectives: To design and implement a centralised, secure, and web-based hospital management system for efficient patient data management across all departments.
+Objectives:
+
+To and implement a centralised, secure, and web-based hospital management system for efficient patient data management across all departments.
 To ensure timely access to accurate and up-to-date medical information for doctors, pharmacists, laboratory staff, and hospital administrators within six months of system deployment.
 To improve efficiency and quality in hospital operations by reducing data duplication, paperwork, and retrieval time by at least 50% within the first year of implementation.
 To support effective decision-making and hospital planning by providing real-time access to patient records and departmental reports across all departments within the first six months.
